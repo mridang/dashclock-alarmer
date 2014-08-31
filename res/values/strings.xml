@@ -1,0 +1,10 @@
+<resources>
+
+    <string name="extension_name">Alarmer</string>
+    <string name="application_name">Dashclock Alarmer Extension</string>
+    <string name="extension_info">Displays information about the upcoming alarms.</string>
+    <string name="today">Next upcoming alarm is today at %1$s</string>
+    <string name="tomorrow">Next upcoming alarm is tomorrow at %1$s</string>
+    <string name="later">Next upcoming alarm is on %1$s at %2$s</string>
+
+</resources>
