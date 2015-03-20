@@ -3,52 +3,50 @@ package com.mridang.alarmer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Random;
 
 import org.acra.ACRA;
 import org.ocpsoft.prettytime.PrettyTime;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.pm.ResolveInfo;
-import android.net.Uri;
+import android.content.IntentFilter;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.android.apps.dashclock.api.DashClockExtension;
 import com.google.android.apps.dashclock.api.ExtensionData;
 
 /*
  * This class is the main class that provides the widget
  */
-public class AlarmerWidget extends DashClockExtension {
+public class AlarmerWidget extends ImprovedExtension {
 
 	/*
-	 * @see
-	 * com.google.android.apps.dashclock.api.DashClockExtension#onInitialize
-	 * (boolean)
+	 * (non-Javadoc)
+	 * @see com.mridang.alarmer.ImprovedExtension#getIntents()
 	 */
 	@Override
-	protected void onInitialize(boolean booReconnect) {
-
-		super.onInitialize(booReconnect);
-		Log.d("AlarmerWidget", "Registered the content observer");
-
+	protected IntentFilter getIntents() {
+		return null;
 	}
 
 	/*
-	 * @see com.google.android.apps.dashclock.api.DashClockExtension#onCreate()
+	 * (non-Javadoc)
+	 * @see com.mridang.alarmer.ImprovedExtension#getTag()
 	 */
-	public void onCreate() {
-
-		super.onCreate();
-		Log.d("AlarmerWidget", "Created");
-		ACRA.init(new AcraApplication(getApplicationContext()));
-
+	@Override
+	protected String getTag() {
+		return getClass().getSimpleName();
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.mridang.alarmer.ImprovedExtension#getUris()
+	 */
+	@Override
+	protected String[] getUris() {
+		return new String[] {Settings.System.getUriFor(Settings.System.NEXT_ALARM_FORMATTED).toString()};
 	}
 
 	/*
@@ -60,7 +58,7 @@ public class AlarmerWidget extends DashClockExtension {
 	@Override
 	protected void onUpdateData(int intReason) {
 
-		Log.d("AlarmerWidget", "Checking the status of the next upcoming alarm");
+		Log.d(getTag(), "Checking the status of the next upcoming alarm");
 		ExtensionData edtInformation = new ExtensionData();
 		setUpdateWhenScreenOn(true);
 
@@ -69,7 +67,7 @@ public class AlarmerWidget extends DashClockExtension {
 			String strAlarma = Settings.System.getString(getContentResolver(), Settings.System.NEXT_ALARM_FORMATTED);
 			if (!TextUtils.isEmpty(strAlarma)) {
 
-				Log.d("AlarmerWidget", "Next upcoming alarm is scheduled for " + strAlarma);
+				Log.d(getTag(), "Next upcoming alarm is scheduled for " + strAlarma);
 				Calendar calAlarm = Calendar.getInstance();
 				Calendar calParsed = Calendar.getInstance();
 				if (android.text.format.DateFormat.is24HourFormat(getApplicationContext())) {
@@ -118,76 +116,34 @@ public class AlarmerWidget extends DashClockExtension {
 				}
 
 				edtInformation.status(strAlarm);
-				edtInformation.expandedBody(new PrettyTime(getResources().getConfiguration().locale).format(calAlarm
-						.getTime()));
+				edtInformation.expandedBody(new PrettyTime(getResources().getConfiguration().locale).format(calAlarm.getTime()));
 				edtInformation.visible(true);
 
 			} else {
 
-				Log.d("AlarmerWidget", "No upcoming alarms found");
+				Log.d(getTag(), "No upcoming alarms found");
 				edtInformation.visible(false);
-
-			}
-
-			if (new Random().nextInt(5) == 0 && !(0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE))) {
-
-				PackageManager mgrPackages = getApplicationContext().getPackageManager();
-
-				try {
-
-					mgrPackages.getPackageInfo("com.mridang.donate", PackageManager.GET_META_DATA);
-
-				} catch (NameNotFoundException e) {
-
-					Integer intExtensions = 0;
-					Intent ittFilter = new Intent("com.google.android.apps.dashclock.Extension");
-					String strPackage;
-
-					for (ResolveInfo info : mgrPackages.queryIntentServices(ittFilter, 0)) {
-
-						strPackage = info.serviceInfo.applicationInfo.packageName;
-						intExtensions = intExtensions + (strPackage.startsWith("com.mridang.") ? 1 : 0);
-
-					}
-
-					if (intExtensions > 1) {
-
-						edtInformation.visible(true);
-						edtInformation.clickIntent(new Intent(Intent.ACTION_VIEW).setData(Uri
-								.parse("market://details?id=com.mridang.donate")));
-						edtInformation.expandedTitle("Please consider a one time purchase to unlock.");
-						edtInformation
-								.expandedBody("Thank you for using "
-										+ intExtensions
-										+ " extensions of mine. Click this to make a one-time purchase or use just one extension to make this disappear.");
-						setUpdateWhenScreenOn(true);
-
-					}
-
-				}
 
 			}
 
 		} catch (Exception e) {
 			edtInformation.visible(false);
-			Log.e("AlarmerWidget", "Encountered an error", e);
+			Log.e(getTag(), "Encountered an error", e);
 			ACRA.getErrorReporter().handleSilentException(e);
 		}
 
 		edtInformation.icon(R.drawable.ic_dashclock);
-		publishUpdate(edtInformation);
-		Log.d("AlarmerWidget", "Done");
+		doUpdate(edtInformation);
 
 	}
 
 	/*
-	 * @see com.google.android.apps.dashclock.api.DashClockExtension#onDestroy()
+	 * (non-Javadoc)
+	 * @see com.mridang.alarmer.ImprovedExtension#onReceiveIntent(android.content.Context, android.content.Intent)
 	 */
-	public void onDestroy() {
-
-		super.onDestroy();
-		Log.d("AlarmerWidget", "Destroyed");
-
+	@Override
+	protected void onReceiveIntent(Context ctxContext, Intent ittIntent) {
+        onUpdateData(UPDATE_REASON_MANUAL);
 	}
 
 }
